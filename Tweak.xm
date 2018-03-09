@@ -46,8 +46,6 @@ static void loadPreferences() {
 		return;
 	}
 
-	NSLog(@"hackingdartmouth settings: %@", settings);
-
 	NSString* identifier;
 	for (NSString* key in [settings allKeys]) {
 		if ([[settings valueForKey:key] boolValue]) {
