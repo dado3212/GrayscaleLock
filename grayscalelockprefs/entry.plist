@@ -1,0 +1,10 @@
+{
+    entry = {
+	bundle = GrayscaleLock;
+	cell = PSLinkCell;
+	detail = GrayscaleLockListController;
+	icon = GrayscaleLock.png;
+	isController = 1;
+	label = GrayscaleLock;
+    };
+}

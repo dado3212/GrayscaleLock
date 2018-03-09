@@ -1,0 +1,11 @@
+Package: com.hackingdartmouth.grayscalelock
+Name: Grayscale Lock
+Depends: mobilesubstrate, applist, preferenceloader
+Version: 1.0
+Architecture: iphoneos-arm
+Description: Turn on/off grayscale automatically when specified apps are opened.
+Maintainer: Alex Beals <Alex.Beals.18@dartmouth.edu>
+Author: Alex Beals <Alex.Beals.18@dartmouth.edu>
+Section: Tweaks
+Depiction: http://cydia.alexbeals.com/GrayscaleLock
+Icon: file:///Library/PreferenceBundles/GrayscaleLock.bundle/GrayscaleLock@2x.png
