@@ -17,3 +17,10 @@
 
 #define kForeground 2
 #define kBackground 1
+
+// For changing assistive touch settings
+@interface AXSettings: NSObject
++(id)sharedInstance;
+-(NSArray *)tripleClickOptions;
+-(void)setTripleClickOptions:(NSArray *)arg1 ;
+@end

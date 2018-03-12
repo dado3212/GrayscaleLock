@@ -26,30 +26,43 @@ static NSMutableDictionary *getDefaults() {
   return defaults;
 }
 
-static void log(NSString *toLog) {
-	NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:@"/var/mobile/log.txt"];
-	[fileHandle seekToEndOfFile];
-	[fileHandle writeData:[[NSString stringWithFormat:@"%@\n", toLog] dataUsingEncoding:NSUTF8StringEncoding]];
-	[fileHandle closeFile];
-}
+// static void log(NSString *toLog) {
+// 	NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:@"/var/mobile/log.txt"];
+// 	[fileHandle seekToEndOfFile];
+// 	[fileHandle writeData:[[NSString stringWithFormat:@"%@\n", toLog] dataUsingEncoding:NSUTF8StringEncoding]];
+// 	[fileHandle closeFile];
+// }
 
 static void setGrayscale(BOOL status) {
 	if (kCFCoreFoundationVersionNumber > 1400) {
 		// iOS 11
-		_AXSGrayscaleSetEnabled(false);
+		_AXSGrayscaleSetEnabled(false); // this works, but with true it doesn't
+
+		// If setting grayscale, set the assistive touch option, and then trigger it
 		if (status) {
+			// Save the current assistive touch option
+			NSArray *oldOptions = [[%c(AXSettings) sharedInstance] tripleClickOptions];
+			// Set it to grayscale
+			[[%c(AXSettings) sharedInstance] setTripleClickOptions:@[@10]]; // 10 = color filters
+			// Trigger the triple click
 			SBClickGestureRecognizer* tripleClick = [[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePressGestureRecognizer];
 
 			// Succeed base
 			MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStateEnded;
 			// Fail all dependents
-			NSMutableSet *failureDependents = MSHookIvar<NSMutableSet *>(tripleClick, "_failureDependents");
-			for (UIGestureRecognizer* failureDependent in failureDependents) {
-				MSHookIvar<long long>(failureDependent, "_state") = UIGestureRecognizerStateFailed;
-			}
+			// NSMutableSet *failureDependents = MSHookIvar<NSMutableSet *>(tripleClick, "_failureDependents");
+			// for (UIGestureRecognizer* failureDependent in failureDependents) {
+			// 	MSHookIvar<long long>(failureDependent, "_state") = UIGestureRecognizerStateFailed;
+			// }
 
 			// Invoke triple press (to toggle colorFilter)
 			[[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePress:tripleClick];
+
+			// Reset the base
+			MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStatePossible;
+
+			// Reset the assistive touch options
+			[[%c(AXSettings) sharedInstance] setTripleClickOptions:oldOptions];
 		}
 	} else {
 		_AXSGrayscaleSetEnabled(status);
@@ -117,6 +130,7 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 }
 
 %hook SBApplication
+%group ios10
 -(void)willActivate {
 	if (enabled) {
 		NSString* identifier = [self bundleIdentifier];
@@ -147,7 +161,9 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 	}
 	%orig;
 }
+%end
 
+%group ios11
 -(void)_updateProcess:(id)arg1 withState:(FBProcessState *)state {
 	// App is launching
 	if ([state visibility] == kForeground && ![[self bundleIdentifier] isEqualToString:lockIdentifier]) {
@@ -180,6 +196,7 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 	%orig;
 }
 %end
+%end
 
 %ctor {
 	CFNotificationCenterAddObserver(
@@ -193,6 +210,12 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 	appsToInvert = [[NSMutableArray alloc] init];
 
 	loadPreferences();
+
+	if (kCFCoreFoundationVersionNumber > 1400) {
+		%init(ios11);
+	} else {
+		%init(ios10);
+	}
 
 	%init;
 }
