@@ -34,7 +34,11 @@ static NSMutableDictionary *getDefaults() {
 }
 
 static void setGrayscale(BOOL status) {
-	_AXSGrayscaleSetEnabled(status);
+	if (kCFCoreFoundationVersionNumber > 1400) {
+		// iOS 11
+	} else {
+		_AXSGrayscaleSetEnabled(status);
+	}
 }
 
 static void loadPreferences() {

@@ -34,6 +34,8 @@ static NSMutableDictionary *getDefaults() {
 
 - (id)specifiers {
 	if (_specifiers == nil) {
+    NSArray *loaded = [[self loadSpecifiersFromPlistName:@"GrayscaleLock" target:self] retain];
+
     NSMutableArray *specs = [NSMutableArray array];
     prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
 
@@ -84,6 +86,11 @@ static NSMutableDictionary *getDefaults() {
                              cell:PSSwitchCell
                              edit:Nil];
     [specs addObject:toggle];
+
+    // Add in the loaded one
+    for (PSSpecifier *spec in loaded) {
+      [specs addObject: spec];
+    }
     
     // Reset
     group = [PSSpecifier preferenceSpecifierNamed:@""
