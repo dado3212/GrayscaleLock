@@ -24,13 +24,31 @@ static bool springboardGray = NO;
 static NSMutableArray* appsToInvert = nil;
 static NSString* lockIdentifier = @"";
 
+static NSMutableDictionary *getDefaults() {
+  NSMutableDictionary *defaults = [NSMutableDictionary dictionary];
+  [defaults setObject:@NO forKey:@"enabled"];
+  [defaults setObject:@NO forKey:@"springboardGray"];
+  [defaults setObject:@NO forKey:@"grayscaleDefault"];
+
+  return defaults;
+}
+
+static void setGrayscale(BOOL status) {
+	_AXSGrayscaleSetEnabled(status);
+}
+
 static void loadPreferences() {
 	NSString* plist = @"/var/mobile/Library/Preferences/com.hackingdartmouth.grayscalelock.plist";
-	NSDictionary* settings = [NSDictionary dictionaryWithContentsOfFile:plist];
+	NSMutableDictionary* settings = [[NSMutableDictionary alloc] initWithContentsOfFile:plist];
+	if (settings == nil) {
+		settings = getDefaults();
+	}
 
 	if ([appsToInvert count]) {
 	  [appsToInvert removeAllObjects];
 	}
+
+	return;
 
 	NSNumber* value = [settings valueForKey:@"enabled"];
 	if (value != nil) {
@@ -63,19 +81,19 @@ static void loadPreferences() {
 
 static void updateSettings(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
   loadPreferences();
-  return;
+
 	// Handle it currently
 	if (!enabled) {
-		_AXSGrayscaleSetEnabled(false);
+		setGrayscale(false);
 	} else {
 		NSString *identifier = @"com.apple.Preferences";
 		if (
 			(grayscaleDefault && ![appsToInvert containsObject:identifier]) ||
 			(!grayscaleDefault && [appsToInvert containsObject:identifier])
 		) {
-			_AXSGrayscaleSetEnabled(true);
+			setGrayscale(true);
 		} else {
-			_AXSGrayscaleSetEnabled(false);
+			setGrayscale(false);
 		}
 	}
 }
@@ -93,9 +111,9 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 			(grayscaleDefault && ![appsToInvert containsObject:identifier]) ||
 			(!grayscaleDefault && [appsToInvert containsObject:identifier])
 		) {
-			_AXSGrayscaleSetEnabled(true);
+			setGrayscale(true);
 		} else {
-			_AXSGrayscaleSetEnabled(false);
+			setGrayscale(false);
 		}
 
 		lockIdentifier = identifier;
@@ -107,7 +125,7 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 	// Going to springboard
 	if ([lockIdentifier isEqualToString:[self bundleIdentifier]]) {
 		lockIdentifier = @"";
-		_AXSGrayscaleSetEnabled(springboardGray);
+		setGrayscale(springboardGray);
 	}
 	%orig;
 }
@@ -122,7 +140,7 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 		NULL,
 		CFNotificationSuspensionBehaviorDeliverImmediately);
 
-	appsToInvert = [NSMutableArray array];
+	appsToInvert = [[NSMutableArray alloc] init];
 
 	loadPreferences();
 
