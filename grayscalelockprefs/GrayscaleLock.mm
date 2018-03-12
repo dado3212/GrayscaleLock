@@ -5,6 +5,15 @@
 
 #define kPlistPath @"/var/mobile/Library/Preferences/com.hackingdartmouth.grayscalelock.plist"
 
+static NSMutableDictionary *getDefaults() {
+  NSMutableDictionary *defaults = [NSMutableDictionary dictionary];
+  [defaults setObject:@NO forKey:@"enabled"];
+  [defaults setObject:@NO forKey:@"springboardGray"];
+  [defaults setObject:@NO forKey:@"grayscaleDefault"];
+
+  return defaults;
+}
+
 @implementation GrayscaleLockListController
 -(id)specifiers {
 	if (_specifiers == nil) {
@@ -15,16 +24,17 @@
 }
 
 - (id)readPreferenceValue:(PSSpecifier*)specifier {
-	NSString *path = [NSString stringWithFormat:@"/User/Library/Preferences/%@.plist", specifier.properties[@"defaults"]];
-	NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:path];
+	NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:kPlistPath];
 	return (settings[specifier.properties[@"key"]]) ?: specifier.properties[@"default"];
 }
 
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier*)specifier {
-	NSString *path = [NSString stringWithFormat:@"/User/Library/Preferences/%@.plist", specifier.properties[@"defaults"]];
-	NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithContentsOfFile:path];
+	NSMutableDictionary *settings = [NSMutableDictionary dictionaryWithContentsOfFile:kPlistPath];
+	if (settings == nil) {
+		settings = getDefaults();
+	}
 	[settings setObject:value forKey:specifier.properties[@"key"]];
-	[settings writeToFile:path atomically:YES];
+	[settings writeToFile:kPlistPath atomically:YES];
 	CFStringRef notificationName = (CFStringRef)specifier.properties[@"PostNotification"];
 	if (notificationName) {
 		CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), notificationName, NULL, NULL, YES);
