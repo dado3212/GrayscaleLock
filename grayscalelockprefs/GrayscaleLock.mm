@@ -91,6 +91,27 @@ static NSMutableDictionary *getDefaults() {
     for (PSSpecifier *spec in loaded) {
       [specs addObject: spec];
     }
+
+    // Update w/o respringing
+    group = [PSSpecifier preferenceSpecifierNamed:@""
+             target:self
+                set:NULL
+                get:NULL
+             detail:Nil
+               cell:PSGroupCell
+               edit:Nil];
+    [group setProperty:@"Refresh without respringing" forKey:@"footerText"];
+    [specs addObject:group];
+
+    PSSpecifier *button = [PSSpecifier preferenceSpecifierNamed:@"Refresh without respringing"
+              target:self
+                 set:NULL
+                 get:NULL
+              detail:Nil
+                cell:PSButtonCell
+                edit:Nil];
+    [button setButtonAction:@selector(refresh)];
+    [specs addObject:button];
     
     // Reset
     group = [PSSpecifier preferenceSpecifierNamed:@""
@@ -103,7 +124,7 @@ static NSMutableDictionary *getDefaults() {
     [group setProperty:@"Clear all selected apps" forKey:@"footerText"];
     [specs addObject:group];
 
-    PSSpecifier *button = [PSSpecifier preferenceSpecifierNamed:@"Reset Settings"
+    button = [PSSpecifier preferenceSpecifierNamed:@"Reset Settings"
               target:self
                  set:NULL
                  get:NULL
@@ -220,6 +241,16 @@ static NSMutableDictionary *getDefaults() {
   [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"mailto:Alex.Beals.18@dartmouth.edu?subject=Cydia%3A%20GrayscaleLock"]];
 }
 
+- (void)refresh {
+  CFNotificationCenterPostNotification(
+    CFNotificationCenterGetDistributedCenter(),
+    CFSTR("com.hackingdartmouth.grayscalelock/settingschanged"),
+    NULL,
+    NULL,
+    kCFNotificationDeliverImmediately
+  );
+}
+
 - (void)resetSettings {
 	UIAlertView* alert = [[UIAlertView alloc] initWithTitle:@"Reset settings"
 		message:@"All selections will be lost. Are you sure?"
@@ -253,6 +284,14 @@ static NSMutableDictionary *getDefaults() {
 
 		[settingsToSave writeToFile:kPrefPath atomically:YES];
 		[self reloadSpecifiers];
+
+    CFNotificationCenterPostNotification(
+      CFNotificationCenterGetDistributedCenter(),
+      CFSTR("com.hackingdartmouth.grayscalelock/settingschanged"),
+      NULL,
+      NULL,
+      kCFNotificationDeliverImmediately
+    );
 	}
 }
 @end

@@ -10,7 +10,7 @@
 			<key>label</key>
 			<string>App-Specific Controls</string>
 			<key>footerText</key>
-			<string>Control grayscale on an app by app basis</string>
+			<string>Control grayscale on an app by app basis.  If you change any apps, click the button below to update your changes without respringing.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
