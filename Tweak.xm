@@ -49,11 +49,6 @@ static void setGrayscale(BOOL status) {
 
 			// Succeed base
 			MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStateEnded;
-			// Fail all dependents
-			// NSMutableSet *failureDependents = MSHookIvar<NSMutableSet *>(tripleClick, "_failureDependents");
-			// for (UIGestureRecognizer* failureDependent in failureDependents) {
-			// 	MSHookIvar<long long>(failureDependent, "_state") = UIGestureRecognizerStateFailed;
-			// }
 
 			// Invoke triple press (to toggle colorFilter)
 			[[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePress:tripleClick];

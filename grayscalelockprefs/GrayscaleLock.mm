@@ -131,7 +131,7 @@ static NSMutableDictionary *getDefaults() {
                 cell:PSButtonCell
                 edit:Nil];
     [button setButtonAction:@selector(donate)];
-    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/paypal.png"] forKey:@"iconImage"];
+    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/GrayscaleLock.bundle/paypal.png"] forKey:@"iconImage"];
     [specs addObject:button];
 
     button = [PSSpecifier preferenceSpecifierNamed:@"Source Code on Github"
@@ -142,7 +142,7 @@ static NSMutableDictionary *getDefaults() {
       cell:PSButtonCell
       edit:Nil];
     [button setButtonAction:@selector(source)];
-    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/github.png"] forKey:@"iconImage"];
+    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/GrayscaleLock.bundle/github.png"] forKey:@"iconImage"];
     [specs addObject:button];
 
     button = [PSSpecifier preferenceSpecifierNamed:@"Email Developer"
@@ -153,7 +153,7 @@ static NSMutableDictionary *getDefaults() {
       cell:PSButtonCell
       edit:Nil];
     [button setButtonAction:@selector(email)];
-    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/mail.png"] forKey:@"iconImage"];
+    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/GrayscaleLock.bundle/mail.png"] forKey:@"iconImage"];
     [specs addObject:button];
 
     // Year footer
@@ -184,11 +184,6 @@ static NSMutableDictionary *getDefaults() {
   } else if ([[specifier name] isEqualToString:@"Grayscale By Default"]) {
     return prefs[@"grayscaleDefault"];
   }
-  // } else if ([[specifier name] isEqualToString:@"Enabled for Group Conversations"]) {
-  //   return [prefs[kTypeKey] intValue] != 3 ? prefs[kGroupsKey] : @NO;
-  // } else if ([[specifier name] isEqualToString:@"Radius"]) {
-  //   return prefs[kRadiusKey];
-  // }
   return nil;
 }
 
@@ -201,11 +196,6 @@ static NSMutableDictionary *getDefaults() {
   } else if ([[specifier name] isEqualToString:@"Grayscale By Default"]) {
     [prefs setValue:value forKey:@"grayscaleDefault"];
   }
-  // } else if ([[specifier name] isEqualToString:@"Enabled for Group Conversations"]) {
-  //   [prefs setValue:value forKey:kGroupsKey];
-  // } else if ([[specifier name] isEqualToString:@"Radius"]) {
-  //   [prefs setValue:value forKey:kRadiusKey];
-  // }
   [prefs writeToFile:kPrefPath atomically:YES];
   [self reloadSpecifiers];
 
