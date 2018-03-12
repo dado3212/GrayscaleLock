@@ -2,20 +2,13 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <CoreFoundation/CFNotificationCenter.h>
 extern "C" CFNotificationCenterRef CFNotificationCenterGetDistributedCenter();
+#include "GrayscaleLock.h"
 
 extern "C" BOOL _AXSGrayscaleEnabled();
 extern "C" void _AXSGrayscaleSetEnabled(BOOL);
 
-@interface SpringBoard
--(void)_relaunchSpringBoardNow;
-@end
-
 @interface SBApplication
 -(id)bundleIdentifier;
-@end
-
-@interface BKSApplicationLaunchSettings
-@property(nonatomic) int interfaceOrientation;
 @end
 
 static bool enabled = NO;
@@ -33,9 +26,31 @@ static NSMutableDictionary *getDefaults() {
   return defaults;
 }
 
+static void log(NSString *toLog) {
+	NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:@"/var/mobile/log.txt"];
+	[fileHandle seekToEndOfFile];
+	[fileHandle writeData:[[NSString stringWithFormat:@"%@\n", toLog] dataUsingEncoding:NSUTF8StringEncoding]];
+	[fileHandle closeFile];
+}
+
 static void setGrayscale(BOOL status) {
 	if (kCFCoreFoundationVersionNumber > 1400) {
 		// iOS 11
+		_AXSGrayscaleSetEnabled(false);
+		if (status) {
+			SBClickGestureRecognizer* tripleClick = [[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePressGestureRecognizer];
+
+			// Succeed base
+			MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStateEnded;
+			// Fail all dependents
+			NSMutableSet *failureDependents = MSHookIvar<NSMutableSet *>(tripleClick, "_failureDependents");
+			for (UIGestureRecognizer* failureDependent in failureDependents) {
+				MSHookIvar<long long>(failureDependent, "_state") = UIGestureRecognizerStateFailed;
+			}
+
+			// Invoke triple press (to toggle colorFilter)
+			[[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePress:tripleClick];
+		}
 	} else {
 		_AXSGrayscaleSetEnabled(status);
 	}
@@ -51,8 +66,6 @@ static void loadPreferences() {
 	if ([appsToInvert count]) {
 	  [appsToInvert removeAllObjects];
 	}
-
-	return;
 
 	NSNumber* value = [settings valueForKey:@"enabled"];
 	if (value != nil) {
@@ -91,6 +104,7 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 		setGrayscale(false);
 	} else {
 		NSString *identifier = @"com.apple.Preferences";
+
 		if (
 			(grayscaleDefault && ![appsToInvert containsObject:identifier]) ||
 			(!grayscaleDefault && [appsToInvert containsObject:identifier])
@@ -127,6 +141,38 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 
 -(void)didDeactivateForEventsOnly:(bool)arg1 {
 	// Going to springboard
+	if ([lockIdentifier isEqualToString:[self bundleIdentifier]]) {
+		lockIdentifier = @"";
+		setGrayscale(springboardGray);
+	}
+	%orig;
+}
+
+-(void)_updateProcess:(id)arg1 withState:(FBProcessState *)state {
+	// App is launching
+	if ([state visibility] == kForeground && ![[self bundleIdentifier] isEqualToString:lockIdentifier]) {
+		NSString* identifier = [self bundleIdentifier];
+
+		// If grayscaleDefault and no app, then set it to grayscale
+		// If grayscaleDefault and yes app, then set it to normal
+		// If NOT grayscaleDefault and no app, then set it to normal
+		// If NOT grayscaleDefault and yes app, then set it to grayscale
+		
+		if (
+			(grayscaleDefault && ![appsToInvert containsObject:identifier]) ||
+			(!grayscaleDefault && [appsToInvert containsObject:identifier])
+		) {
+			setGrayscale(true);
+		} else {
+			setGrayscale(false);
+		}
+
+		lockIdentifier = identifier;
+	}
+	return %orig;
+}
+
+-(void)saveSnapshotForSceneHandle:(id)arg1 context:(id)arg2 completion:(/*^block*/id)arg3 {
 	if ([lockIdentifier isEqualToString:[self bundleIdentifier]]) {
 		lockIdentifier = @"";
 		setGrayscale(springboardGray);
