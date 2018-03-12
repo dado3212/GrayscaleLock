@@ -1,4 +1,7 @@
 #include <UIKit/UIKit.h>
+#import <CoreFoundation/CoreFoundation.h>
+#import <CoreFoundation/CFNotificationCenter.h>
+extern "C" CFNotificationCenterRef CFNotificationCenterGetDistributedCenter();
 
 extern "C" BOOL _AXSGrayscaleEnabled();
 extern "C" void _AXSGrayscaleSetEnabled(BOOL);
@@ -58,24 +61,21 @@ static void loadPreferences() {
 	}
 }
 
-static void receivedNotification(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-	NSString* notificationName = (NSString*)name;
-
-	if ([notificationName isEqualToString:@"com.hackingdartmouth.grayscalelock/settingschanged"]) {
-		loadPreferences();
-		// Handle it currently
-		if (!enabled) {
-			_AXSGrayscaleSetEnabled(false);
+static void updateSettings(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+  loadPreferences();
+  return;
+	// Handle it currently
+	if (!enabled) {
+		_AXSGrayscaleSetEnabled(false);
+	} else {
+		NSString *identifier = @"com.apple.Preferences";
+		if (
+			(grayscaleDefault && ![appsToInvert containsObject:identifier]) ||
+			(!grayscaleDefault && [appsToInvert containsObject:identifier])
+		) {
+			_AXSGrayscaleSetEnabled(true);
 		} else {
-			NSString *identifier = @"com.apple.Preferences";
-			if (
-				(grayscaleDefault && ![appsToInvert containsObject:identifier]) ||
-				(!grayscaleDefault && [appsToInvert containsObject:identifier])
-			) {
-				_AXSGrayscaleSetEnabled(true);
-			} else {
-				_AXSGrayscaleSetEnabled(false);
-			}
+			_AXSGrayscaleSetEnabled(false);
 		}
 	}
 }
@@ -115,9 +115,9 @@ static void receivedNotification(CFNotificationCenterRef center, void *observer,
 
 %ctor {
 	CFNotificationCenterAddObserver(
-		CFNotificationCenterGetDarwinNotifyCenter(),
+		CFNotificationCenterGetDistributedCenter(),
 		NULL,
-		receivedNotification,
+		&updateSettings,
 		CFSTR("com.hackingdartmouth.grayscalelock/settingschanged"),
 		NULL,
 		CFNotificationSuspensionBehaviorDeliverImmediately);
