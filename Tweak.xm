@@ -33,6 +33,20 @@ static NSMutableDictionary *getDefaults() {
 // 	[fileHandle closeFile];
 // }
 
+static void tripleClickLock() {
+	// Trigger the triple click
+	SBClickGestureRecognizer* tripleClick = [[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePressGestureRecognizer];
+
+	// Succeed base
+	MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStateEnded;
+
+	// Invoke triple press (to toggle colorFilter)
+	[[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePress:tripleClick];
+
+	// Reset the base
+	MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStatePossible;
+}
+
 static void setGrayscale(BOOL status) {
 	if (kCFCoreFoundationVersionNumber > 1400) {
 		// iOS 11
@@ -44,17 +58,8 @@ static void setGrayscale(BOOL status) {
 			NSArray *oldOptions = [[%c(AXSettings) sharedInstance] tripleClickOptions];
 			// Set it to grayscale
 			[[%c(AXSettings) sharedInstance] setTripleClickOptions:@[@10]]; // 10 = color filters
-			// Trigger the triple click
-			SBClickGestureRecognizer* tripleClick = [[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePressGestureRecognizer];
-
-			// Succeed base
-			MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStateEnded;
-
-			// Invoke triple press (to toggle colorFilter)
-			[[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePress:tripleClick];
-
-			// Reset the base
-			MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStatePossible;
+			
+			tripleClickLock();
 
 			// Reset the assistive touch options
 			[[%c(AXSettings) sharedInstance] setTripleClickOptions:oldOptions];
@@ -150,7 +155,7 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 
 -(void)didDeactivateForEventsOnly:(bool)arg1 {
 	// Going to springboard
-	if ([lockIdentifier isEqualToString:[self bundleIdentifier]]) {
+	if (enabled && [lockIdentifier isEqualToString:[self bundleIdentifier]]) {
 		lockIdentifier = @"";
 		setGrayscale(springboardGray);
 	}
@@ -161,7 +166,7 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 %group ios11
 -(void)_updateProcess:(id)arg1 withState:(FBProcessState *)state {
 	// App is launching
-	if ([state visibility] == kForeground && ![[self bundleIdentifier] isEqualToString:lockIdentifier]) {
+	if (enabled && [state visibility] == kForeground && ![[self bundleIdentifier] isEqualToString:lockIdentifier]) {
 		NSString* identifier = [self bundleIdentifier];
 
 		// If grayscaleDefault and no app, then set it to grayscale
@@ -184,7 +189,7 @@ static void updateSettings(CFNotificationCenterRef center, void *observer, CFStr
 }
 
 -(void)saveSnapshotForSceneHandle:(id)arg1 context:(id)arg2 completion:(/*^block*/id)arg3 {
-	if ([lockIdentifier isEqualToString:[self bundleIdentifier]]) {
+	if (enabled && [lockIdentifier isEqualToString:[self bundleIdentifier]]) {
 		lockIdentifier = @"";
 		setGrayscale(springboardGray);
 	}
