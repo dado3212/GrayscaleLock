@@ -2,17 +2,30 @@
 @end
 
 @interface SBLockHardwareButton : NSObject
-@property(retain, nonatomic) SBClickGestureRecognizer *triplePressGestureRecognizer; // @synthesize triplePressGestureRecognizer=_triplePressGestureRecognizer;
+@property(retain, nonatomic) SBClickGestureRecognizer *triplePressGestureRecognizer;
 - (void)triplePress:(id)arg1;
 @end
 
+@interface UIHBClickGestureRecognizer: UIGestureRecognizer
+@end
+
+@interface SBHomeHardwareButtonGestureRecognizerConfiguration: NSObject
+@property(retain, nonatomic) UIHBClickGestureRecognizer *triplePressUpGestureRecognizer; // @synthesize triplePressUpGestureRecognizer=_triplePressUpGestureRecognizer;
+@end
+
+@interface SBHomeHardwareButton : NSObject
+- (void)triplePressUp:(id)arg1;
+@property(retain, nonatomic) SBHomeHardwareButtonGestureRecognizerConfiguration *gestureRecognizerConfiguration; // @synthesize gestureRecognizerConfiguration=_gestureRecognizerConfiguration;
+@end
+
 @interface SpringBoard: UIApplication
-@property(readonly, nonatomic) SBLockHardwareButton *lockHardwareButton; // @synthesize lockHardwareButton=_lockHardwareButton;
+@property(readonly, nonatomic) SBLockHardwareButton *lockHardwareButton;
+@property(readonly, nonatomic) SBHomeHardwareButton *homeHardwareButton;
 @end
 
 // For figuring out which app has launched
 @interface FBProcessState: NSObject
-@property (assign,nonatomic) int visibility;                                   //@synthesize visibility=_visibility - In the implementation block
+@property (assign,nonatomic) int visibility;
 @end
 
 #define kForeground 2

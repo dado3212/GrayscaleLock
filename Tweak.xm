@@ -3,6 +3,7 @@
 #import <CoreFoundation/CFNotificationCenter.h>
 extern "C" CFNotificationCenterRef CFNotificationCenterGetDistributedCenter();
 #include "GrayscaleLock.h"
+#import <sys/utsname.h>
 
 extern "C" BOOL _AXSGrayscaleEnabled();
 extern "C" void _AXSGrayscaleSetEnabled(BOOL);
@@ -33,6 +34,16 @@ static NSMutableDictionary *getDefaults() {
 // 	[fileHandle closeFile];
 // }
 
+static void tripleClickHome() {
+	UIHBClickGestureRecognizer* tripleClick = [[[(SpringBoard *)[%c(SpringBoard) sharedApplication] homeHardwareButton] gestureRecognizerConfiguration] triplePressUpGestureRecognizer];
+	// Succeed base
+	MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStateEnded;
+
+	[[(SpringBoard *)[%c(SpringBoard) sharedApplication] homeHardwareButton] triplePressUp:tripleClick];
+
+	MSHookIvar<long long>(tripleClick, "_state") = UIGestureRecognizerStatePossible;
+}
+
 static void tripleClickLock() {
 	// Trigger the triple click
 	SBClickGestureRecognizer* tripleClick = [[(SpringBoard *)[%c(SpringBoard) sharedApplication] lockHardwareButton] triplePressGestureRecognizer];
@@ -48,24 +59,32 @@ static void tripleClickLock() {
 }
 
 static void setGrayscale(BOOL status) {
-	if (kCFCoreFoundationVersionNumber > 1400) {
-		// iOS 11
-		_AXSGrayscaleSetEnabled(false); // this works, but with true it doesn't
+	// If you want it to be enabled and it is, don't do anything
+	if (_AXSGrayscaleEnabled() && status) {
+		return;
+	}
 
-		// If setting grayscale, set the assistive touch option, and then trigger it
-		if (status) {
-			// Save the current assistive touch option
-			NSArray *oldOptions = [[%c(AXSettings) sharedInstance] tripleClickOptions];
-			// Set it to grayscale
-			[[%c(AXSettings) sharedInstance] setTripleClickOptions:@[@10]]; // 10 = color filters
-			
+	_AXSGrayscaleSetEnabled(false); // doesn't work setting it to true on iOS 11, iPhone X
+
+	struct utsname systemInfo;
+	uname(&systemInfo);
+	NSString *modelName = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+
+	if (status) {
+		// Save the current assistive touch option
+		NSArray *oldOptions = [[%c(AXSettings) sharedInstance] tripleClickOptions];
+		// Set it to grayscale
+		[[%c(AXSettings) sharedInstance] setTripleClickOptions:@[@10]]; // 10 = color filters
+
+		// iPhone X
+		if ([modelName isEqualToString:@"iPhone10,3"] || [modelName isEqualToString:@"iPhone10,6"]) {
 			tripleClickLock();
-
-			// Reset the assistive touch options
-			[[%c(AXSettings) sharedInstance] setTripleClickOptions:oldOptions];
+		} else {
+			tripleClickHome();
 		}
-	} else {
-		_AXSGrayscaleSetEnabled(status);
+
+		// Reset the assistive touch options
+		[[%c(AXSettings) sharedInstance] setTripleClickOptions:oldOptions];
 	}
 }
 
